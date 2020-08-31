@@ -28,6 +28,8 @@ jobs:
           export PATH=$PATH:/usr/local/kubebuilder/bin
           echo $PATH
           echo "Done installing kubebuilder"
+          ls /usr/local/kubebuilder
+          ls /usr/local/kubebuilder/bin
           go install github.com/onsi/ginkgo/ginkgo
           echo "Done installing ginkgo cli"
           ls
