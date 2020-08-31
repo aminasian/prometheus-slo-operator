@@ -1,0 +1,14 @@
+name: Build and Publish New Container Image
+on:
+  - push
+steps:
+  build:
+    name: Build and Publish Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: '0'
+      - name: Build Container
+        run: make docker-build IMG=aminasian/prometheus-slo-operator:0.0.1
