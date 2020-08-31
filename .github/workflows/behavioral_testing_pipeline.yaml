@@ -27,4 +27,9 @@ jobs:
           tar -zxvf kubebuilder_${version}_darwin_${arch}.tar.gz
           mv kubebuilder_${version}_darwin_${arch} kubebuilder && sudo mv kubebuilder /usr/local/
           export PATH=$PATH:/usr/local/kubebuilder/bin
+          echo $PATH
           echo "Done installing kubebuilder"
+          go install github.com/onsi/ginkgo/ginkgo
+          echo "Done installing ginkgo cli"
+          ls
+          echo $PWD
