@@ -1,7 +1,7 @@
 name: Build and Publish New Container Image
 on:
   - push
-steps:
+jobs:
   build:
     name: Build and Publish Image
     runs-on: ubuntu-latest
