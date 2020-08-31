@@ -1,0 +1,121 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.3.0
+  creationTimestamp: null
+  name: servicelevels.monitoring.aminasian.com
+spec:
+  group: monitoring.aminasian.com
+  names:
+    kind: ServiceLevel
+    listKind: ServiceLevelList
+    plural: servicelevels
+    singular: servicelevel
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: ServiceLevel is the Schema for the servicelevels API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: ServiceLevelSpec defines the desired state of ServiceLevel
+          properties:
+            prometheusAddress:
+              description: Address is the address of the Prometheus.
+              type: string
+            prometheusName:
+              description: Name of Prometheus Operator Instance to integrate with
+              type: string
+            serviceLevelObjectives:
+              items:
+                description: SLO defines the desired state of a Service Level Objective
+                properties:
+                  availabilityObjectivePercent:
+                    description: AvailabilityObjectivePercent is the percentage of
+                      availability target for the SLO.
+                    type: string
+                  description:
+                    description: Description is a description of the SLO.
+                    type: string
+                  name:
+                    description: Name of the SLO, must be made of [a-zA-z0-9] and
+                      '_'(underscore) characters.
+                    type: string
+                  output:
+                    description: Output is the output backedn of the SLO.
+                    properties:
+                      prometheus:
+                        description: Prometheus is the prometheus format for the SLO
+                          output.
+                        properties:
+                          labels:
+                            additionalProperties:
+                              type: string
+                            description: Labels are the labels that will be set to
+                              the output metrics of this SLO.
+                            type: object
+                        type: object
+                    type: object
+                  serviceLevelIndicator:
+                    description: ServiceLevelIndicator is the SLI associated with
+                      the SLO.
+                    properties:
+                      prometheus:
+                        description: Prometheus is the prometheus SLI source.
+                        properties:
+                          errorQuery:
+                            description: ErrorQuery is the query that gets the total
+                              errors that then will be divided against the total.
+                            type: string
+                          totalQuery:
+                            description: TotalQuery is the query that gets the total
+                              that will be the base to get the unavailability of the
+                              SLO based on the errorQuery (errorQuery / totalQuery).
+                            type: string
+                        required:
+                        - errorQuery
+                        - totalQuery
+                        type: object
+                    type: object
+                required:
+                - availabilityObjectivePercent
+                - name
+                - output
+                - serviceLevelIndicator
+                type: object
+              type: array
+          required:
+          - prometheusAddress
+          - prometheusName
+          type: object
+        status:
+          description: ServiceLevelStatus defines the observed state of ServiceLevel
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

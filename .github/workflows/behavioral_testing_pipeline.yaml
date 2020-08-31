@@ -1,0 +1,41 @@
+on:
+  - pull_request
+
+name: Behavioral Testing
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        go-version:
+          - 1.15.x
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Golang Environment
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout Source Code
+        uses: actions/checkout@v2
+      - name: Install Kubebuilder and Ginkgo Binaries
+        run: |
+          echo "Installing kubebuilder and ginko cli"
+          version=2.3.1 # latest stable version
+          arch=amd64
+          curl -L -O "https://github.com/kubernetes-sigs/kubebuilder/releases/download/v${version}/kubebuilder_${version}_linux_${arch}.tar.gz"
+          tar -zxvf kubebuilder_${version}_linux_${arch}.tar.gz
+          mv kubebuilder_${version}_linux_${arch} kubebuilder && sudo mv kubebuilder /usr/local/
+          export PATH=$PATH:/usr/local/kubebuilder/bin
+          echo $PATH
+          echo "Done installing kubebuilder"
+          echo "kubebuilder version"
+          kubebuilder version
+          ls /usr/local/kubebuilder
+          ls /usr/local/kubebuilder/bin
+          go install github.com/onsi/ginkgo/ginkgo
+          echo "Done installing ginkgo cli"
+          ls
+          echo $PWD
+          go version
+      - name: Run Ginkgo Behavioral Tests
+        run: ginkgo -v --progress controllers/

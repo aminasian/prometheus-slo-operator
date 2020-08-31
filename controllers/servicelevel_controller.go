@@ -20,35 +20,35 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	monitoringv1alpha1 "github.com/aminasian/prometheus-slo-operator/api/v1alpha1"
+	promoperatorv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	"github.com/go-logr/logr"
 	v1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/api/policy/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	vpav1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"strings"
-	promoperatorv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	vpav1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
-	monitoringv1alpha1 "github.com/aminasian/prometheus-slo-operator/api/v1alpha1"
 )
 
 // ServiceLevelReconciler reconciles a ServiceLevel object
 type ServiceLevelReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log                    logr.Logger
+	Scheme                 *runtime.Scheme
 	SLOCalculatorContainer string
-	IsPrometheusOperator bool
-	UseVPAResource bool
+	IsPrometheusOperator   bool
+	UseVPAResource         bool
 }
 
 // +kubebuilder:rbac:groups=monitoring.aminasian.com,resources=servicelevels,verbs=get;list;watch;create;update;patch;delete
@@ -158,8 +158,6 @@ func (r *ServiceLevelReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 	//jsonBytes, _ := json.Marshal(prometheusRule)
 	//go_log.Printf("PrometheusRule: \n\n\n\n %v \n\n\n\n", string(jsonBytes))
 
-
-
 	if r.IsPrometheusOperator {
 
 		prometheusRule, err := newPrometheusRuleResourceForCR(instance)
@@ -213,7 +211,6 @@ func (r *ServiceLevelReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 
 	}
 
-
 	if r.UseVPAResource {
 
 		vpa, err := newVPAResourceForCR(deployment)
@@ -242,7 +239,6 @@ func (r *ServiceLevelReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 		}
 
 	}
-
 
 	return ctrl.Result{}, nil
 }
@@ -289,7 +285,7 @@ func newDeploymentResourceForCR(cr *monitoringv1alpha1.ServiceLevel, calculatorC
 
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
-				MatchLabels: cr.ObjectMeta.Labels,
+				MatchLabels: map[string]string{"app.kubernetes.io/name": cr.ObjectMeta.Labels["app.kubernetes.io/name"]},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
@@ -309,9 +305,9 @@ func newDeploymentResourceForCR(cr *monitoringv1alpha1.ServiceLevel, calculatorC
 					//	},
 					//},
 					Containers: []corev1.Container{{
-						Name:    "iheart-slo-exporter",
-						Image:   calculatorContainer,
-						Args:    []string{},
+						Name:  "iheart-slo-exporter",
+						Image: calculatorContainer,
+						Args:  []string{},
 						Ports: []corev1.ContainerPort{{
 							ContainerPort: port,
 						}},
@@ -329,9 +325,9 @@ func newDeploymentResourceForCR(cr *monitoringv1alpha1.ServiceLevel, calculatorC
 						ImagePullPolicy: "Always",
 						VolumeMounts: []corev1.VolumeMount{
 							{
-								Name:             "config",
-								ReadOnly:         true,
-								MountPath:        "/app/config",
+								Name:      "config",
+								ReadOnly:  true,
+								MountPath: "/app/config",
 							},
 						},
 						//LivenessProbe:   &corev1.Probe{
@@ -405,7 +401,7 @@ func newDeploymentResourceForCR(cr *monitoringv1alpha1.ServiceLevel, calculatorC
 									LocalObjectReference: corev1.LocalObjectReference{
 										Name: cr.Name,
 									},
-									Items:       []corev1.KeyToPath{
+									Items: []corev1.KeyToPath{
 										{
 											Key:  "config.json",
 											Path: "config.json",
@@ -435,9 +431,9 @@ func newServiceResourceForCR(cr *monitoringv1alpha1.ServiceLevel) (*corev1.Servi
 
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        cr.Name,
-			Namespace:   cr.Namespace,
-			Labels:      cr.ObjectMeta.Labels,
+			Name:      cr.Name,
+			Namespace: cr.Namespace,
+			Labels:    cr.ObjectMeta.Labels,
 		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{{
@@ -450,7 +446,6 @@ func newServiceResourceForCR(cr *monitoringv1alpha1.ServiceLevel) (*corev1.Servi
 	}, nil
 }
 func newPrometheusRuleResourceForCR(cr *monitoringv1alpha1.ServiceLevel) (*promoperatorv1.PrometheusRule, error) {
-
 
 	// generate prometheus rules for querying efficiency
 	var rules []promoperatorv1.RuleGroup
@@ -465,7 +460,7 @@ func newPrometheusRuleResourceForCR(cr *monitoringv1alpha1.ServiceLevel) (*promo
 		splitSLOName := strings.Split(slo.Name, "-")
 		promFormattedSLOName := ""
 		for i, str := range splitSLOName {
-			if  i == 0 {
+			if i == 0 {
 				promFormattedSLOName = str
 			} else {
 				promFormattedSLOName = fmt.Sprintf("%v_%v", promFormattedSLOName, str)
@@ -497,7 +492,6 @@ func newPrometheusRuleResourceForCR(cr *monitoringv1alpha1.ServiceLevel) (*promo
 		ruleGroup.Rules = append(ruleGroup.Rules, errorRule)
 	}
 
-
 	// Generate Prometheus Rules for error budget violation alert's PromQL expressions
 	// and also add Alerts to Prometheus Rule resource
 
@@ -505,7 +499,7 @@ func newPrometheusRuleResourceForCR(cr *monitoringv1alpha1.ServiceLevel) (*promo
 	splitCRName := strings.Split(cr.Name, "-")
 	promFormattedCRName := ""
 	for i, str := range splitCRName {
-		if  i == 0 {
+		if i == 0 {
 			promFormattedCRName = str
 		} else {
 			promFormattedCRName = fmt.Sprintf("%v_%v", promFormattedCRName, str)
@@ -513,16 +507,16 @@ func newPrometheusRuleResourceForCR(cr *monitoringv1alpha1.ServiceLevel) (*promo
 	}
 
 	oneHourAlertExpr := fmt.Sprintf(
-		"(" +
-			"increase(service_level_sli_result_error_ratio_total{service_level=\"%v\"}[1h])" +
-			"/" +
-			"increase(service_level_sli_result_count_total{service_level=\"%v\"}[1h])" +
-			") > (1 - service_level_slo_objective_ratio{service_level=\"%v\"}) * 0.02 " +
-			"and" +
-			" (" +
-			"increase(service_level_sli_result_error_ratio_total{service_level=\"%v\"}[5m])" +
-			"/" +
-			"increase(service_level_sli_result_count_total{service_level=\"%v\"}[5m])" +
+		"("+
+			"increase(service_level_sli_result_error_ratio_total{service_level=\"%v\"}[1h])"+
+			"/"+
+			"increase(service_level_sli_result_count_total{service_level=\"%v\"}[1h])"+
+			") > (1 - service_level_slo_objective_ratio{service_level=\"%v\"}) * 0.02 "+
+			"and"+
+			" ("+
+			"increase(service_level_sli_result_error_ratio_total{service_level=\"%v\"}[5m])"+
+			"/"+
+			"increase(service_level_sli_result_count_total{service_level=\"%v\"}[5m])"+
 			") > (1 - service_level_slo_objective_ratio{service_level=\"%v\"}) * 0.02", cr.Name, cr.Name, cr.Name, cr.Name, cr.Name, cr.Name)
 
 	oneHourAlertRuleName := fmt.Sprintf("alert:%v:%v", promFormattedCRName, "SLOErrorRateTooFast1h")
@@ -540,31 +534,31 @@ func newPrometheusRuleResourceForCR(cr *monitoringv1alpha1.ServiceLevel) (*promo
 
 	// Generate Alerts
 	oneHourAlert := promoperatorv1.Rule{
-		Alert:  fmt.Sprintf("%v-%v", cr.Name, "SLOErrorRateTooFast1h"),
+		Alert: fmt.Sprintf("%v-%v", cr.Name, "SLOErrorRateTooFast1h"),
 		Expr: intstr.IntOrString{
 			Type:   1,
 			IntVal: 0,
 			StrVal: oneHourAlertRuleName,
 		},
-		For:         "15m",
-		Labels:      map[string]string{"severity": "critical", "owner": ""},
+		For:    "15m",
+		Labels: map[string]string{"severity": "critical", "owner": ""},
 		Annotations: map[string]string{
-			"summary": "The SLO error budget burn rate for 1h is greater than 2%",
+			"summary":     "The SLO error budget burn rate for 1h is greater than 2%",
 			"description": "The error rate for 1h in the {{$labels.service_level}}/{{$labels.slo}} SLO error budget is too fast, is greater than the total error budget 2%.",
 		},
 	}
 
 	sixHourAlertExpr := fmt.Sprintf(
-		"(" +
-			"increase(service_level_sli_result_error_ratio_total{service_level=\"%v\"}[6h])" +
-			"/" +
-			"increase(service_level_sli_result_count_total{service_level=\"%v\"}[6h])" +
-			") > (1 - service_level_slo_objective_ratio{service_level=\"%v\"}) * 0.05 " +
-			"and" +
-			" (" +
-			"increase(service_level_sli_result_error_ratio_total{service_level=\"%v\"}[30m])" +
-			"/" +
-			"increase(service_level_sli_result_count_total{service_level=\"%v\"}[30m])" +
+		"("+
+			"increase(service_level_sli_result_error_ratio_total{service_level=\"%v\"}[6h])"+
+			"/"+
+			"increase(service_level_sli_result_count_total{service_level=\"%v\"}[6h])"+
+			") > (1 - service_level_slo_objective_ratio{service_level=\"%v\"}) * 0.05 "+
+			"and"+
+			" ("+
+			"increase(service_level_sli_result_error_ratio_total{service_level=\"%v\"}[30m])"+
+			"/"+
+			"increase(service_level_sli_result_count_total{service_level=\"%v\"}[30m])"+
 			") > (1 - service_level_slo_objective_ratio{service_level=\"%v\"}) * 0.05", cr.Name, cr.Name, cr.Name, cr.Name, cr.Name, cr.Name)
 
 	sixHourAlertRuleName := fmt.Sprintf("alert:%v:%v", promFormattedCRName, "SLOErrorRateTooFast6h")
@@ -581,16 +575,16 @@ func newPrometheusRuleResourceForCR(cr *monitoringv1alpha1.ServiceLevel) (*promo
 	ruleGroup.Rules = append(ruleGroup.Rules, sixHourAlertRule)
 
 	sixHourAlert := promoperatorv1.Rule{
-		Alert:  fmt.Sprintf("%v-%v", cr.Name, "SLOErrorRateTooFast6h"),
+		Alert: fmt.Sprintf("%v-%v", cr.Name, "SLOErrorRateTooFast6h"),
 		Expr: intstr.IntOrString{
 			Type:   1,
 			IntVal: 0,
 			StrVal: sixHourAlertRuleName,
 		},
-		For:         "15m",
-		Labels:      map[string]string{"severity": "critical", "owner": ""},
+		For:    "15m",
+		Labels: map[string]string{"severity": "critical", "owner": ""},
 		Annotations: map[string]string{
-			"summary": "The SLO error budget burn rate for 6h is greater than 5%",
+			"summary":     "The SLO error budget burn rate for 6h is greater than 5%",
 			"description": "The error rate for 6h in the {{$labels.service_level}}/{{$labels.slo}} SLO error budget is too fast, is greater than the total error budget 5%.",
 		},
 	}
@@ -598,12 +592,10 @@ func newPrometheusRuleResourceForCR(cr *monitoringv1alpha1.ServiceLevel) (*promo
 	ruleGroup.Rules = append(ruleGroup.Rules, oneHourAlert)
 	ruleGroup.Rules = append(ruleGroup.Rules, sixHourAlert)
 
-
 	rules = append(rules, ruleGroup)
 
 	labels := cr.ObjectMeta.Labels
 	labels["prometheus"] = cr.Spec.PrometheusName
-
 
 	return &promoperatorv1.PrometheusRule{
 		TypeMeta: metav1.TypeMeta{
@@ -611,9 +603,9 @@ func newPrometheusRuleResourceForCR(cr *monitoringv1alpha1.ServiceLevel) (*promo
 			APIVersion: "monitoring.coreos.com/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            cr.Name,
-			Namespace:       cr.Namespace,
-			Labels: labels,
+			Name:      cr.Name,
+			Namespace: cr.Namespace,
+			Labels:    labels,
 		},
 		Spec: promoperatorv1.PrometheusRuleSpec{
 			Groups: rules,
@@ -647,11 +639,11 @@ func newConfigMapResourceForCR(cr *monitoringv1alpha1.ServiceLevel) (*corev1.Con
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            cr.Name,
-			Namespace:       cr.Namespace,
-			Labels:          cr.ObjectMeta.Labels,
+			Name:      cr.Name,
+			Namespace: cr.Namespace,
+			Labels:    cr.ObjectMeta.Labels,
 		},
-		Data:       map[string]string{"config.json": string(jsonBytes)},
+		Data: map[string]string{"config.json": string(jsonBytes)},
 	}, nil
 }
 
@@ -675,9 +667,9 @@ func newVPAResourceForCR(d *v1.Deployment) (*vpav1.VerticalPodAutoscaler, error)
 			APIVersion: "autoscaling.k8s.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            d.Name,
-			Namespace:       d.Namespace,
-			Labels:                     d.ObjectMeta.Labels,
+			Name:      d.Name,
+			Namespace: d.Namespace,
+			Labels:    d.ObjectMeta.Labels,
 		},
 		Spec: vpav1.VerticalPodAutoscalerSpec{
 			TargetRef: &autoscalingv1.CrossVersionObjectReference{
@@ -693,7 +685,7 @@ func newVPAResourceForCR(d *v1.Deployment) (*vpav1.VerticalPodAutoscaler, error)
 					ContainerName: d.Spec.Template.Spec.Containers[0].Name,
 					//Mode:          nil,
 					//MinAllowed:    nil,
-					MaxAllowed:    corev1.ResourceList{
+					MaxAllowed: corev1.ResourceList{
 						corev1.ResourceCPU:    cpuLimit,
 						corev1.ResourceMemory: memLimit,
 					},
@@ -714,18 +706,18 @@ func newPodMonitorForCR(cr *monitoringv1alpha1.ServiceLevel) (*promoperatorv1.Po
 			APIVersion: "monitoring.coreos.com/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            cr.Name,
-			Namespace:       cr.Namespace,
-			Labels:                     labels,
+			Name:      cr.Name,
+			Namespace: cr.Namespace,
+			Labels:    labels,
 		},
 		Spec: promoperatorv1.PodMonitorSpec{
-			JobLabel:            "jobLabel",
+			JobLabel: "jobLabel",
 			PodMetricsEndpoints: []promoperatorv1.PodMetricsEndpoint{{
 				Port: "http",
-				Path:                 "/metrics",
+				Path: "/metrics",
 			}},
 			Selector: metav1.LabelSelector{
-				MatchLabels:      cr.ObjectMeta.Labels,
+				MatchLabels: cr.ObjectMeta.Labels,
 			},
 			NamespaceSelector: promoperatorv1.NamespaceSelector{
 				Any:        false,
