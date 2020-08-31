@@ -34,7 +34,7 @@ jobs:
           echo "Done installing ginkgo cli"
           ls
           echo $PWD
-          echo $GOPATH
           go version
+          ginkgo -v --progress controllers/
       - name: Run Ginkgo Behavioral Tests
         run: ginkgo -v --progress controllers/
