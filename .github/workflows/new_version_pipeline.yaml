@@ -1,0 +1,19 @@
+name: Create and Push New Tag
+on:
+  push:
+    branches:
+      - master
+jobs:
+  tag:
+    name: Generate Tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: '0'
+      - name: Bump version and push tag
+        uses: ChloePlanet/github-tag-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
+          WITH_V: false
