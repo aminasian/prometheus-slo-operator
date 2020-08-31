@@ -19,9 +19,10 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-      - name: Set Git Version Env Variable
-        run: export VERSION=$(git describe --tags --abbrev=0)
       - name: Build Container
-        run: make docker-build IMG=aminasian/prometheus-slo-operator:${VERSION}
+        run: |
+          export VERSION=$(git describe --tags --abbrev=0)
+          echo $VERSION
+          make docker-build IMG=aminasian/prometheus-slo-operator:$VERSION
       - name: Publish Container
         run: make docker-push IMG=aminasian/prometheus-slo-operator:${VERSION}
