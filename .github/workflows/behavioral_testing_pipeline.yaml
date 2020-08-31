@@ -1,5 +1,5 @@
 on:
-  - push
+  - pull_request
 
 name: Behavioral Testing
 
@@ -37,6 +37,5 @@ jobs:
           ls
           echo $PWD
           go version
-          ginkgo -v --progress controllers/
       - name: Run Ginkgo Behavioral Tests
         run: ginkgo -v --progress controllers/
