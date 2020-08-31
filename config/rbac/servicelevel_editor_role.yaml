@@ -1,0 +1,24 @@
+# permissions for end users to edit servicelevels.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: servicelevel-editor-role
+rules:
+- apiGroups:
+  - monitoring.aminasian.com
+  resources:
+  - servicelevels
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - monitoring.aminasian.com
+  resources:
+  - servicelevels/status
+  verbs:
+  - get
