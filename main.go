@@ -28,9 +28,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	monitoringv1alpha1 "github.com/aminasian/prometheus-slo-operator/api/v1alpha1"
+	"github.com/aminasian/prometheus-slo-operator/controllers"
 	promoperatorv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	vpav1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
-	"github.com/aminasian/prometheus-slo-operator/controllers"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -80,12 +80,12 @@ func main() {
 	}
 
 	if err = (&controllers.ServiceLevelReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("ServiceLevel"),
-		Scheme: mgr.GetScheme(),
+		Client:                 mgr.GetClient(),
+		Log:                    ctrl.Log.WithName("controllers").WithName("ServiceLevel"),
+		Scheme:                 mgr.GetScheme(),
 		SLOCalculatorContainer: sloCalculatorContainer,
-		IsPrometheusOperator: isPrometheusOperator,
-		UseVPAResource: useVPAResource,
+		IsPrometheusOperator:   isPrometheusOperator,
+		UseVPAResource:         useVPAResource,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServiceLevel")
 		os.Exit(1)

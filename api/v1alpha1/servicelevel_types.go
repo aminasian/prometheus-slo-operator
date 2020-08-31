@@ -30,8 +30,8 @@ type ServiceLevelSpec struct {
 	// Address is the address of the Prometheus.
 	PrometheusAddress string `json:"prometheusAddress"`
 	// Name of Prometheus Operator Instance to integrate with
-	PrometheusName string 	`json:"prometheusName"`
-	ServiceLevelObjectives []SLO `json:"serviceLevelObjectives,omitempty"`
+	PrometheusName         string `json:"prometheusName"`
+	ServiceLevelObjectives []SLO  `json:"serviceLevelObjectives,omitempty"`
 }
 
 // ServiceLevelStatus defines the observed state of ServiceLevel
@@ -76,7 +76,6 @@ type SLO struct {
 	// Output is the output backedn of the SLO.
 	Output Output `json:"output"`
 }
-
 
 // SLI is the SLI to get for the SLO.
 type SLI struct {

@@ -1,0 +1,30 @@
+on:
+  - push
+  - pull_request
+
+name: Behavioral Testing
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        go-version:
+          - 1.15.x
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Golang Environment
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout Source Code
+        uses: actions/checkout@v2
+      - name: Run Ginkgo Behavioral Tests
+        run: |
+          echo "Installing kubebuilder and ginko cli"
+          version=1.0.8 # latest stable version
+          arch=amd64
+          curl -L -O "https://github.com/kubernetes-sigs/kubebuilder/releases/download/v${version}/kubebuilder_${version}_darwin_${arch}.tar.gz"
+          tar -zxvf kubebuilder_${version}_darwin_${arch}.tar.gz
+          mv kubebuilder_${version}_darwin_${arch} kubebuilder && sudo mv kubebuilder /usr/local/
+          export PATH=$PATH:/usr/local/kubebuilder/bin
+          echo "Done installing kubebuilder"
