@@ -18,7 +18,7 @@ jobs:
           go-version: ${{ matrix.go-version }}
       - name: Checkout Source Code
         uses: actions/checkout@v2
-      - name: Run Ginkgo Behavioral Tests
+      - name: Install Kubebuilder and Ginkgo Binaries
         run: |
           echo "Installing kubebuilder and ginko cli"
           version=1.0.8 # latest stable version
@@ -34,3 +34,6 @@ jobs:
           ls
           echo $PWD
           echo $GOPATH
+          go version
+      - name: Run Ginkgo Behavioral Tests
+        run: ginkgo -v --progress controllers/
