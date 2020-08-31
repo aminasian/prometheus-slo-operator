@@ -12,3 +12,5 @@ jobs:
           fetch-depth: '0'
       - name: Build Container
         run: make docker-build IMG=aminasian/prometheus-slo-operator:0.0.1
+      - name: Publish Container
+        run: make docker-push IMG=aminasian/prometheus-slo-operator:0.0.1
