@@ -57,32 +57,35 @@ var _ = BeforeSuite(func(done Done) {
 
 	logf.SetLogger(zap.LoggerTo(GinkgoWriter, true))
 
-	//By("bootstrapping test environment")
-	//testEnv = &envtest.Environment{
-	//	CRDDirectoryPaths: []string{filepath.Join("..", "config", "crd", "bases")},
-	//}
-	//
-	//var err error
-	//cfg, err = testEnv.Start()
-	//Expect(err).ToNot(HaveOccurred())
-	//Expect(cfg).ToNot(BeNil())
-	//
-	//log.Print("finnished starting test environment")
-	//
-	//err = monitoringv1alpha1.AddToScheme(scheme.Scheme)
-	//Expect(err).NotTo(HaveOccurred())
-	//
-	//log.Print("finnished adding monitoring api to manager scheme")
-	//
-	//// +kubebuilder:scaffold:scheme
-	//
-	//k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
-	//Expect(err).ToNot(HaveOccurred())
-	//Expect(k8sClient).ToNot(BeNil())
-	//
-	//log.Print("finnished starting instantiating k8sclient for testing")
-	//
-	//Context("Finished setting up k8sClient", func() {})
+	By("bootstrapping test environment")
+	testEnv = &envtest.Environment{
+		CRDDirectoryPaths: []string{filepath.Join("..", "config", "crd", "bases")},
+	}
+
+	var err error
+	cfg, err = testEnv.Start()
+	Expect(err).ToNot(HaveOccurred())
+	Expect(cfg).ToNot(BeNil())
+
+	log.Print("finnished starting test environment")
+
+	err = monitoringv1alpha1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = promoperatorv1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	log.Print("finnished adding monitoring api to manager scheme")
+
+	// +kubebuilder:scaffold:scheme
+
+	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	Expect(err).ToNot(HaveOccurred())
+	Expect(k8sClient).ToNot(BeNil())
+
+	log.Print("finnished starting instantiating k8sclient for testing")
+
+	Context("Finished setting up k8sClient", func() {})
 
 	close(done)
 }, 60)
@@ -137,7 +140,7 @@ var _ = Describe("TestDeploymentResourceCreation", func() {
 
 	Context("After setting up a test environment K8s client", func() {
 		It("the returned error should be nil", func() {
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 
@@ -162,7 +165,7 @@ var _ = Describe("TestDeploymentResourceCreation", func() {
 
 	Context("After creating a new K8s Deployment resource struct", func() {
 		It("the returned error should be nil", func() {
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 
@@ -171,7 +174,7 @@ var _ = Describe("TestDeploymentResourceCreation", func() {
 
 	Context("After calling the K8s api and creating a new K8s Deployment resource", func() {
 		It("the returned error should be nil", func() {
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 
@@ -182,7 +185,7 @@ var _ = Describe("TestPodMonitorResourceCreation", func() {
 
 	Context("After setting up a test environment K8s client", func() {
 		It("the returned error should be nil", func() {
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 
@@ -206,7 +209,7 @@ var _ = Describe("TestPodMonitorResourceCreation", func() {
 
 	Context("After creating a new K8s PodMonitor resource struct", func() {
 		It("the returned error should be nil", func() {
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 
@@ -215,7 +218,7 @@ var _ = Describe("TestPodMonitorResourceCreation", func() {
 
 	Context("After calling the K8s api and creating a new K8s PodMonitor resource", func() {
 		It("the returned error should be nil", func() {
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 })
