@@ -23,6 +23,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	vpav1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"log"
@@ -57,35 +58,35 @@ var _ = BeforeSuite(func(done Done) {
 
 	logf.SetLogger(zap.LoggerTo(GinkgoWriter, true))
 
-	By("bootstrapping test environment")
-	testEnv = &envtest.Environment{
-		CRDDirectoryPaths: []string{filepath.Join("..", "config", "crd", "bases")},
-	}
-
-	var err error
-	cfg, err = testEnv.Start()
-	Expect(err).ToNot(HaveOccurred())
-	Expect(cfg).ToNot(BeNil())
-
-	log.Print("finnished starting test environment")
-
-	err = monitoringv1alpha1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = promoperatorv1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	log.Print("finnished adding monitoring api to manager scheme")
-
-	// +kubebuilder:scaffold:scheme
-
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
-	Expect(err).ToNot(HaveOccurred())
-	Expect(k8sClient).ToNot(BeNil())
-
-	log.Print("finnished starting instantiating k8sclient for testing")
-
-	Context("Finished setting up k8sClient", func() {})
+	//By("bootstrapping test environment")
+	//testEnv = &envtest.Environment{
+	//	CRDDirectoryPaths: []string{filepath.Join("..", "config", "crd", "bases")},
+	//}
+	//
+	//var err error
+	//cfg, err = testEnv.Start()
+	//Expect(err).ToNot(HaveOccurred())
+	//Expect(cfg).ToNot(BeNil())
+	//
+	//log.Print("finnished starting test environment")
+	//
+	//err = monitoringv1alpha1.AddToScheme(scheme.Scheme)
+	//Expect(err).NotTo(HaveOccurred())
+	//
+	//err = promoperatorv1.AddToScheme(scheme.Scheme)
+	//Expect(err).NotTo(HaveOccurred())
+	//
+	//log.Print("finnished adding monitoring api to manager scheme")
+	//
+	//// +kubebuilder:scaffold:scheme
+	//
+	//k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	//Expect(err).ToNot(HaveOccurred())
+	//Expect(k8sClient).ToNot(BeNil())
+	//
+	//log.Print("finnished starting instantiating k8sclient for testing")
+	//
+	//Context("Finished setting up k8sClient", func() {})
 
 	close(done)
 }, 60)
@@ -123,6 +124,11 @@ func setupK8sClient() (client.Client, error) {
 		return nil, err
 	}
 
+	err = vpav1.AddToScheme(scheme.Scheme)
+	if err != nil {
+		return nil, err
+	}
+
 
 	// +kubebuilder:scaffold:scheme
 
@@ -134,8 +140,15 @@ func setupK8sClient() (client.Client, error) {
 	return k8sClient, nil
 }
 
-var _ = Describe("TestDeploymentResourceCreation", func() {
+var _ = Describe("TestDeploymentResourceCreation", testDeploymentResourceCreation)
+var _ = Describe("TestPodMonitorResourceCreation", testPodMonitorResourceCreation)
+var _ = Describe("TestVPAResourceCreation", testVPAResourceCreation)
+var _ = Describe("TestPDBResourceCreation", testPDBResourceCreation)
+var _ = Describe("TestPrometheusRuleResourceCreation", testPrometheusRuleResourceCreation)
+var _ = Describe("TestConfigMapResourceCreation", testConfigMapResourceCreation)
 
+
+func testDeploymentResourceCreation() {
 	client, err := setupK8sClient()
 
 	Context("After setting up a test environment K8s client", func() {
@@ -177,10 +190,10 @@ var _ = Describe("TestDeploymentResourceCreation", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
+}
 
-})
+func testPodMonitorResourceCreation() {
 
-var _ = Describe("TestPodMonitorResourceCreation", func() {
 	client, err := setupK8sClient()
 
 	Context("After setting up a test environment K8s client", func() {
@@ -221,4 +234,14 @@ var _ = Describe("TestPodMonitorResourceCreation", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
-})
+}
+
+func testVPAResourceCreation() {}
+
+func testPDBResourceCreation() {}
+
+func testPrometheusRuleResourceCreation() {}
+
+func testConfigMapResourceCreation()  {}
+
+

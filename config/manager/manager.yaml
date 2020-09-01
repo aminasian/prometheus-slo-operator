@@ -27,6 +27,7 @@ spec:
         - /manager
         args:
         - --enable-leader-election
+        - --slo-calculator-image=aminasian/prometheus-slo-calculator:0.0.2
         image: controller:latest
         name: manager
         resources:
