@@ -169,12 +169,30 @@ func (r *ServiceLevelReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 			return reconcile.Result{}, err
 		}
 
-		podMonitor, err := newPodMonitorForCR(instance)
+		//podMonitor, err := newPodMonitorForCR(instance)
+		//if err != nil {
+		//	return reconcile.Result{}, err
+		//}
+		//
+		//if err := controllerutil.SetControllerReference(instance, podMonitor, r.Scheme); err != nil {
+		//	return reconcile.Result{}, err
+		//}
+
+		service, err := newServiceResourceForCR(instance)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
 
-		if err := controllerutil.SetControllerReference(instance, podMonitor, r.Scheme); err != nil {
+		if err := controllerutil.SetControllerReference(instance, service, r.Scheme); err != nil {
+			return reconcile.Result{}, err
+		}
+
+		serviceMonitor, err :=  newServiceMonitorResourceForCR(instance)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+
+		if err := controllerutil.SetControllerReference(instance, serviceMonitor, r.Scheme); err != nil {
 			return reconcile.Result{}, err
 		}
 
@@ -194,15 +212,47 @@ func (r *ServiceLevelReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error
 			// handle update
 		}
 
-		// PodMonitor
-		foundPodMonitor := &promoperatorv1.PodMonitor{}
-		err = r.Get(ctx, types.NamespacedName{Name: podMonitor.Name, Namespace: podMonitor.Namespace}, foundPodMonitor)
+		//// PodMonitor
+		//foundPodMonitor := &promoperatorv1.PodMonitor{}
+		//err = r.Get(ctx, types.NamespacedName{Name: podMonitor.Name, Namespace: podMonitor.Namespace}, foundPodMonitor)
+		//if err != nil && errors.IsNotFound(err) {
+		//	logger.Info("Creating a new PrometheusRule", "PodMonitor.Namespace", podMonitor.Namespace, "PodMonitor.Name", podMonitor.Name)
+		//	err = r.Create(ctx, podMonitor)
+		//	if err != nil {
+		//		return reconcile.Result{}, err
+		//	}
+		//} else if err != nil {
+		//	return reconcile.Result{}, err
+		//} else {
+		//	// handle update
+		//}
+
+		// Service
+		foundService := &corev1.Service{}
+		err = r.Get(context.TODO(), types.NamespacedName{Name: service.Name, Namespace: service.Namespace}, foundService)
 		if err != nil && errors.IsNotFound(err) {
-			logger.Info("Creating a new PrometheusRule", "PodMonitor.Namespace", podMonitor.Namespace, "PodMonitor.Name", podMonitor.Name)
-			err = r.Create(ctx, podMonitor)
+			logger.Info("Creating a new Service", "Service.Namespace", service.Namespace, "Service.Name", service.Name)
+			err = r.Create(context.TODO(), service)
 			if err != nil {
 				return reconcile.Result{}, err
 			}
+
+		} else if err != nil {
+			return reconcile.Result{}, err
+		} else {
+			// handle update
+		}
+
+		// ServiceMonitor
+		foundServiceMonitor := &promoperatorv1.ServiceMonitor{}
+		err = r.Get(context.TODO(), types.NamespacedName{Name: serviceMonitor.Name, Namespace: serviceMonitor.Namespace}, foundServiceMonitor)
+		if err != nil && errors.IsNotFound(err) {
+			logger.Info("Creating a new ServiceMonitor", "ServiceMonitor.Namespace", serviceMonitor.Namespace, "ServiceMonitor.Name", serviceMonitor.Name)
+			err = r.Create(context.TODO(), serviceMonitor)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+
 		} else if err != nil {
 			return reconcile.Result{}, err
 		} else {
@@ -671,6 +721,60 @@ func newVPAResourceForCR(d *v1.Deployment) (*vpav1.VerticalPodAutoscaler, error)
 						corev1.ResourceMemory: memLimit,
 					},
 				}},
+			},
+		},
+	}, nil
+}
+
+func newServiceResourceForCR(cr *monitoringv1alpha1.ServiceLevel) (*corev1.Service, error) {
+
+	var port int32 = 8080
+
+	return &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        cr.Name,
+			Namespace:   cr.Namespace,
+			Labels:      cr.ObjectMeta.Labels,
+		},
+		Spec: corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{{
+				Name: "http",
+				Port: port,
+			}},
+			Selector: map[string]string{"app.kubernetes.io/name": cr.ObjectMeta.Labels["app.kubernetes.io/name"]},
+			Type:     "ClusterIP",
+		},
+	}, nil
+}
+
+func newServiceMonitorResourceForCR(cr *monitoringv1alpha1.ServiceLevel) (*promoperatorv1.ServiceMonitor, error) {
+
+	labels := cr.ObjectMeta.Labels
+	labels["prometheus"] = cr.Spec.PrometheusName
+
+	return &promoperatorv1.ServiceMonitor{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ServiceMonitor",
+			APIVersion: "monitoring.coreos.com/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            cr.Name,
+			Namespace:       cr.Namespace,
+			Labels:          labels,
+
+		},
+		Spec: promoperatorv1.ServiceMonitorSpec{
+			JobLabel:        "jobLabel",
+			Endpoints:       []promoperatorv1.Endpoint{{
+				Port: 		 "http",
+				Path:        "/metrics",
+			}},
+			Selector: metav1.LabelSelector{
+				MatchLabels:      map[string]string{"app.kubernetes.io/name": cr.ObjectMeta.Labels["app.kubernetes.io/name"]},
+			},
+			NamespaceSelector: promoperatorv1.NamespaceSelector{
+				Any:        false,
+				MatchNames: []string{cr.Namespace},
 			},
 		},
 	}, nil

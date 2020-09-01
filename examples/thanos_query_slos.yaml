@@ -5,8 +5,6 @@ metadata:
   namespace: gap
   labels:
     app.kubernetes.io/name: "thanos-query-service-level"
-    app.iheart.com/owner: "sre"
-    app.iheart.com/env: "prod"
 spec:
   prometheusAddress: "http://sre-prometheus.gap.svc.cluster.local:80"
   prometheusName: "sre-prometheus"
@@ -24,4 +22,4 @@ spec:
       output:
         prometheus:
           labels:
-            team: sre
+            team: thanos-owner
