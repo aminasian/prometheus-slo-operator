@@ -309,6 +309,7 @@ func newDeploymentResourceForCR(cr *monitoringv1alpha1.ServiceLevel, calculatorC
 						Image: calculatorContainer,
 						Args:  []string{},
 						Ports: []corev1.ContainerPort{{
+							Name: "http",
 							ContainerPort: port,
 						}},
 						//Env: {},
@@ -425,26 +426,6 @@ func newDeploymentResourceForCR(cr *monitoringv1alpha1.ServiceLevel, calculatorC
 	}, nil
 }
 
-func newServiceResourceForCR(cr *monitoringv1alpha1.ServiceLevel) (*corev1.Service, error) {
-
-	var port int32 = 8080
-
-	return &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name,
-			Namespace: cr.Namespace,
-			Labels:    cr.ObjectMeta.Labels,
-		},
-		Spec: corev1.ServiceSpec{
-			Ports: []corev1.ServicePort{{
-				Name: "http",
-				Port: port,
-			}},
-			Selector: cr.ObjectMeta.Labels,
-			Type:     "ClusterIP",
-		},
-	}, nil
-}
 func newPrometheusRuleResourceForCR(cr *monitoringv1alpha1.ServiceLevel) (*promoperatorv1.PrometheusRule, error) {
 
 	// generate prometheus rules for querying efficiency
@@ -711,19 +692,17 @@ func newPodMonitorForCR(cr *monitoringv1alpha1.ServiceLevel) (*promoperatorv1.Po
 			Labels:    labels,
 		},
 		Spec: promoperatorv1.PodMonitorSpec{
-			JobLabel: "jobLabel",
 			PodMetricsEndpoints: []promoperatorv1.PodMetricsEndpoint{{
 				Port: "http",
 				Path: "/metrics",
 			}},
 			Selector: metav1.LabelSelector{
-				MatchLabels: cr.ObjectMeta.Labels,
+				MatchLabels: map[string]string{"app.kubernetes.io/name": cr.ObjectMeta.Labels["app.kubernetes.io/name"]},
 			},
 			NamespaceSelector: promoperatorv1.NamespaceSelector{
 				Any:        false,
 				MatchNames: []string{cr.Namespace},
 			},
-			SampleLimit: 0,
 		},
 	}, nil
 }

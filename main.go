@@ -53,14 +53,14 @@ func init() {
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
-	var sloCalculatorContainer string
+	var sloCalculatorImage string
 	var isPrometheusOperator bool
 	var useVPAResource bool
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.StringVar(&sloCalculatorContainer, "slo-calculator-container", "", "")
+	flag.StringVar(&sloCalculatorImage, "slo-calculator-image", "", "")
 	flag.BoolVar(&isPrometheusOperator, "is-prometheus-operator", false, "")
 	flag.BoolVar(&useVPAResource, "use-vpa-resource", false, "")
 	flag.Parse()
@@ -83,7 +83,7 @@ func main() {
 		Client:                 mgr.GetClient(),
 		Log:                    ctrl.Log.WithName("controllers").WithName("ServiceLevel"),
 		Scheme:                 mgr.GetScheme(),
-		SLOCalculatorContainer: sloCalculatorContainer,
+		SLOCalculatorContainer: sloCalculatorImage,
 		IsPrometheusOperator:   isPrometheusOperator,
 		UseVPAResource:         useVPAResource,
 	}).SetupWithManager(mgr); err != nil {

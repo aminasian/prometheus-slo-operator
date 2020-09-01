@@ -1,0 +1,27 @@
+apiVersion: monitoring.aminasian.com/v1alpha1
+kind: ServiceLevel
+metadata:
+  name: thanos-query-service-levels
+  namespace: gap
+  labels:
+    app.kubernetes.io/name: "thanos-query-service-level"
+    app.iheart.com/owner: "sre"
+    app.iheart.com/env: "prod"
+spec:
+  prometheusAddress: "http://sre-prometheus.gap.svc.cluster.local:80"
+  prometheusName: "sre-prometheus"
+  serviceLevelObjectives:
+    - name: "thanos-query-p99-latency"
+      description: "Thanos query component p99 latency"
+      availabilityObjectivePercent: "99"
+      serviceLevelIndicator:
+        prometheus:
+          totalQuery: |
+            sum(increase(http_request_duration_seconds_bucket{service="thanos-query", handler="query"}[5m]))
+            -
+            sum(increase(http_request_duration_seconds_bucket{service="thanos-query", handler="query", le="0.3"}[5m]))
+          errorQuery: sum(increase(http_request_duration_seconds_count{service="thanos-query", handler="query"}[5m]))
+      output:
+        prometheus:
+          labels:
+            team: sre

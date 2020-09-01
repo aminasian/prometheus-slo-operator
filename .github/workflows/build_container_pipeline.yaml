@@ -1,10 +1,8 @@
 name: Build and Publish New Container Image
-#on:
-#  push:
-#    tags:
-#      - '*.*.*'
 on:
-  - push
+  push:
+    tags:
+      - '*.*.*'
 jobs:
   build:
     name: Build and Publish Image
@@ -25,4 +23,7 @@ jobs:
           echo $VERSION
           make docker-build IMG=aminasian/prometheus-slo-operator:$VERSION
       - name: Publish Container
-        run: make docker-push IMG=aminasian/prometheus-slo-operator:${VERSION}
+        run: |
+          export VERSION=$(git describe --tags --abbrev=0)
+          echo $VERSION
+          make docker-push IMG=aminasian/prometheus-slo-operator:$VERSION
